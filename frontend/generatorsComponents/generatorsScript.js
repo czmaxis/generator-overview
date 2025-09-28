@@ -1,35 +1,36 @@
-fetch("http://localhost:8000/api/generators/list")
-  .then((response) => {
-    if (!response.ok) {
-      throw new Error("Chyba při načítání dat z API");
-    }
-    return response.json();
-  })
-  .then((data) => {
-    const list = document.getElementById("generatorsList");
+document.addEventListener("DOMContentLoaded", () => {
+  fetch("http://localhost:8000/api/generators/list")
+    .then((response) => response.json())
+    .then((generators) => {
+      const list = document.getElementById("generatorsList");
+      generators.forEach((generator) => {
+        const item = document.createElement("li");
+        item.className =
+          "list-group-item d-flex justify-content-between align-items-start list-group-item-action";
+        item.style.cursor = "pointer";
 
-    data.forEach((generator) => {
-      const item = document.createElement("li");
-      item.className =
-        "list-group-item d-flex justify-content-between align-items-start";
+        item.innerHTML = `
+          <div class="ms-2 me-auto">
+            <div class="fw-bold">${generator.name}</div>
+            Max Output: ${generator.max_output} W
+          </div>
+          <span class="badge text-bg-primary rounded-pill">
+            ${generator.last_load_percentage} %
+          </span>
+        `;
 
-      item.innerHTML = `
-        <div class="ms-2 me-auto">
-          <div class="fw-bold">${generator.name}</div>
-          Výkon: ${generator.max_output} W<br>
-          Zapnutý: <span class="${
-            generator.on ? "text-success" : "text-danger"
-          }">${generator.on ? "ANO" : "NE"}</span><br>
-          Zatížení: ${generator.last_load_percentage} %
-        </div>
-        <span class="badge text-bg-primary rounded-pill">
-          ID: ${generator.id}
-        </span>
-      `;
+        item.addEventListener("click", () => {
+          // Ulož data do localStorage
+          localStorage.setItem("selectedGenerator", JSON.stringify(generator));
 
-      list.appendChild(item);
+          // Přejdi na detail stránku
+          window.location.href = "generatorDetail.html";
+        });
+
+        list.appendChild(item);
+      });
+    })
+    .catch((error) => {
+      console.error("Chyba při načítání generátorů:", error);
     });
-  })
-  .catch((error) => {
-    document.body.innerHTML += `<p style="color:red;">${error.message}</p>`;
-  });
+});

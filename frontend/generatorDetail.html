@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detail generátoru</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="generators.html">Zpět na seznam</a>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+      <h2>Detail generátoru</h2>
+      <div id="generatorDetail" class="card mt-3">
+        <div class="card-body">
+          <h5 class="card-title" id="generatorName">Načítání...</h5>
+          <div class="mt-3">
+            <button id="turnOn" class="btn btn-success me-2">Zapnout</button>
+            <button id="turnOff" class="btn btn-danger">Vypnout</button>
+          </div>
+          <div id="statusMessage" class="mt-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let generatorId = null;
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const data = localStorage.getItem("selectedGenerator");
+        const container = document.getElementById("generatorDetail");
+        const title = document.getElementById("generatorName");
+
+        if (data) {
+          const generator = JSON.parse(data);
+          generatorId = generator.id;
+          title.textContent = generator.name;
+        } else {
+          container.innerHTML = `
+            <div class="card-body">
+              <div class="alert alert-danger">Generátor nebyl nalezen. Vraťte se na <a href="generators.html">seznam</a>.</div>
+            </div>
+          `;
+        }
+
+        document.getElementById("turnOn").addEventListener("click", () => {
+          toggleGenerator("on");
+        });
+
+        document.getElementById("turnOff").addEventListener("click", () => {
+          toggleGenerator("off");
+        });
+      });
+
+      function toggleGenerator(action) {
+        if (!generatorId) return;
+
+        const url =
+          action === "on"
+            ? "http://localhost:8000/api/sessions"
+            : "http://localhost:8000/api/sessions/stop";
+
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ generator_id: generatorId }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("statusMessage").innerHTML = `
+              <div class="alert alert-info">${
+                data.message || "Operace provedena."
+              }</div>
+            `;
+          })
+          .catch((error) => {
+            document.getElementById("statusMessage").innerHTML = `
+              <div class="alert alert-danger">Chyba: ${error}</div>
+            `;
+          });
+      }
+    </script>
+  </body>
+</html>
