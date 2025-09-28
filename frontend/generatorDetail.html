@@ -26,16 +26,18 @@
               <strong>Maximální výkon:</strong> <span id="maxOutput">-</span> W
             </li>
             <li class="list-group-item">
+              <strong>Aktuální výkon:</strong>
+              <span id="currentOutput">-</span>
+            </li>
+            <li class="list-group-item">
+              <strong>Zátěž aktuálně:</strong> <span id="sessionLoad">-</span>
+            </li>
+            <li class="list-group-item">
               <strong>Stav:</strong> <span id="status">-</span>
             </li>
-            <li class="list-group-item">
-              <strong>Poslední zátěž:</strong> <span id="lastLoad">-</span> %
-            </li>
+
             <li class="list-group-item">
               <strong>Start:</strong> <span id="sessionStart">-</span>
-            </li>
-            <li class="list-group-item">
-              <strong>Zátěž aktuálně:</strong> <span id="sessionLoad">-</span> %
             </li>
           </ul>
 
@@ -44,6 +46,25 @@
               Zapnout
             </button>
             <button id="turnOff" class="btn btn-danger d-none">Vypnout</button>
+          </div>
+
+          <div class="mt-4">
+            <h5>Změnit zátěž</h5>
+            <button class="btn btn-secondary mb-2" id="showLoadInput">
+              Změnit zátěž
+            </button>
+
+            <div class="input-group d-none" id="loadInputGroup">
+              <input
+                type="number"
+                id="newLoad"
+                class="form-control"
+                placeholder="Zadejte zátěž (0–100)"
+                min="0"
+                max="100"
+              />
+              <button class="btn btn-primary" id="updateLoad">Potvrdit</button>
+            </div>
           </div>
 
           <div id="statusMessage" class="mt-3"></div>
@@ -62,12 +83,21 @@
         const title = document.getElementById("generatorName");
         const maxOutput = document.getElementById("maxOutput");
         const status = document.getElementById("status");
-        const lastLoad = document.getElementById("lastLoad");
+
         const sessionStart = document.getElementById("sessionStart");
         const sessionLoad = document.getElementById("sessionLoad");
+        const currentOutput = document.getElementById("currentOutput");
+        const showLoadInput = document.getElementById("showLoadInput");
+        const loadInputGroup = document.getElementById("loadInputGroup");
+
+        showLoadInput.addEventListener("click", () => {
+          loadInputGroup.classList.remove("d-none");
+          showLoadInput.classList.add("d-none");
+        });
 
         const btnOn = document.getElementById("turnOn");
         const btnOff = document.getElementById("turnOff");
+        const btnUpdate = document.getElementById("updateLoad");
 
         if (data) {
           generator = JSON.parse(data);
@@ -75,7 +105,6 @@
 
           title.textContent = `${generator.name} (ID: ${generator.id})`;
           maxOutput.textContent = generator.max_output;
-          lastLoad.textContent = generator.last_load_percentage;
 
           if (generator.on) {
             status.textContent = "Zapnutý";
@@ -86,28 +115,7 @@
           }
 
           // Načíst aktuální session
-          fetch("http://localhost:8000/api/sessions/current", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ generator_id: generatorId }),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.status === "success" && data.session) {
-                sessionStart.textContent = new Date(
-                  data.session.start_datetime
-                ).toLocaleString();
-                sessionLoad.textContent = data.session.load_percentage + " %";
-              } else {
-                sessionStart.textContent = "-";
-                sessionLoad.textContent = "-";
-              }
-            })
-            .catch((error) => {
-              console.error("Chyba při načítání session:", error);
-            });
+          loadSession();
         } else {
           container.innerHTML = `
             <div class="card-body">
@@ -118,6 +126,7 @@
 
         btnOn.addEventListener("click", () => toggleGenerator("on"));
         btnOff.addEventListener("click", () => toggleGenerator("off"));
+        btnUpdate.addEventListener("click", () => updateLoad());
       });
 
       function toggleGenerator(action) {
@@ -142,7 +151,6 @@
                 data.message || "Operace provedena."
               }</div>
             `;
-
             const status = document.getElementById("status");
             const btnOn = document.getElementById("turnOn");
             const btnOff = document.getElementById("turnOff");
@@ -156,11 +164,85 @@
               btnOff.classList.add("d-none");
               btnOn.classList.remove("d-none");
             }
+
+            // znovu načíst session
+            loadSession();
           })
           .catch((error) => {
             document.getElementById("statusMessage").innerHTML = `
               <div class="alert alert-danger">Chyba: ${error}</div>
             `;
+          });
+      }
+
+      function loadSession() {
+        fetch("http://localhost:8000/api/sessions/current", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ generator_id: generatorId }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success" && data.session) {
+              document.getElementById("sessionStart").textContent = new Date(
+                data.session.start_datetime
+              ).toLocaleString();
+              document.getElementById("sessionLoad").textContent =
+                data.session.load_percentage + " %";
+              document.getElementById("currentOutput").textContent =
+                data.session.power_output + " W";
+            } else {
+              document.getElementById("sessionStart").textContent = "-";
+              document.getElementById("sessionLoad").textContent = "-";
+              document.getElementById("currentOutput").textContent = "-";
+            }
+          })
+          .catch((error) => {
+            console.error("Chyba při načítání session:", error);
+          });
+      }
+
+      function updateLoad() {
+        const newLoad = parseInt(document.getElementById("newLoad").value);
+        if (isNaN(newLoad) || newLoad < 0 || newLoad > 100) {
+          alert("Zadejte platnou hodnotu zátěže (0–100)");
+          return;
+        }
+
+        fetch("http://localhost:8000/api/sessions/update-load", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            generator_id: generatorId,
+            load_percentage: newLoad,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              document.getElementById("sessionLoad").textContent =
+                newLoad + " %";
+              document.getElementById("currentOutput").textContent =
+                data.power_output + " W";
+              document.getElementById("statusMessage").innerHTML = `
+            <div class="alert alert-success">${data.message}</div>
+          `;
+            } else {
+              document.getElementById("statusMessage").innerHTML = `
+            <div class="alert alert-danger">${
+              data.error || "Chyba při aktualizaci zátěže"
+            }</div>
+          `;
+            }
+
+            // Skrytí pole po odeslání
+            document.getElementById("loadInputGroup").classList.add("d-none");
+            document.getElementById("showLoadInput").classList.remove("d-none");
+          })
+          .catch((error) => {
+            document.getElementById("statusMessage").innerHTML = `
+          <div class="alert alert-danger">Chyba: ${error}</div>
+        `;
           });
       }
     </script>
