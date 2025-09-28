@@ -1,0 +1,11 @@
+parameters:
+    appDir: %appDir%
+    wwwDir: %wwwDir%
+
+application:
+    errorPresenter: Error
+    mapping:
+        *: App\Presentation\*Module\*Presenter
+
+services:
+    - App\Core\RouterFactory::createRouter

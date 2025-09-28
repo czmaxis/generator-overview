@@ -1,0 +1,50 @@
+# Composer výstup
+/vendor/
+
+# Cache a dočasné soubory Nette
+/temp/
+!/temp/.gitkeep
+
+# Logy
+/log/
+!/log/.gitkeep
+
+# Ladicí nástroje (např. Tracy)
+*.log
+
+# IDE nastavení
+/.idea/
+/.vscode/
+
+# OS specifické soubory
+.DS_Store
+Thumbs.db
+
+# Lokální konfigurační soubory
+/config/local.neon
+
+# Zálohy a swapy
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Node.js frontend vývoj (např. live-server)
+/node_modules/
+/frontend/node_modules/
+frontend/dist/
+/package-lock.json
+/yarn.lock
+
+# Výstupy z přehrávání požadavků (např. Insomnia)
+/*.json
+/*.http
+
+# Testovací databáze nebo dumpy
+*.sql
+*.sqlite
+*.db
+
+# PHPUnit cache
+.phpunit.result.cache
+
