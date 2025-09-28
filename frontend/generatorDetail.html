@@ -31,6 +31,12 @@
             <li class="list-group-item">
               <strong>Poslední zátěž:</strong> <span id="lastLoad">-</span> %
             </li>
+            <li class="list-group-item">
+              <strong>Start:</strong> <span id="sessionStart">-</span>
+            </li>
+            <li class="list-group-item">
+              <strong>Zátěž aktuálně:</strong> <span id="sessionLoad">-</span> %
+            </li>
           </ul>
 
           <div class="mt-3">
@@ -57,6 +63,8 @@
         const maxOutput = document.getElementById("maxOutput");
         const status = document.getElementById("status");
         const lastLoad = document.getElementById("lastLoad");
+        const sessionStart = document.getElementById("sessionStart");
+        const sessionLoad = document.getElementById("sessionLoad");
 
         const btnOn = document.getElementById("turnOn");
         const btnOff = document.getElementById("turnOff");
@@ -65,7 +73,7 @@
           generator = JSON.parse(data);
           generatorId = generator.id;
 
-          title.textContent = generator.name;
+          title.textContent = `${generator.name} (ID: ${generator.id})`;
           maxOutput.textContent = generator.max_output;
           lastLoad.textContent = generator.last_load_percentage;
 
@@ -76,6 +84,30 @@
             status.textContent = "Vypnutý";
             btnOn.classList.remove("d-none");
           }
+
+          // Načíst aktuální session
+          fetch("http://localhost:8000/api/sessions/current", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ generator_id: generatorId }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.status === "success" && data.session) {
+                sessionStart.textContent = new Date(
+                  data.session.start_datetime
+                ).toLocaleString();
+                sessionLoad.textContent = data.session.load_percentage + " %";
+              } else {
+                sessionStart.textContent = "-";
+                sessionLoad.textContent = "-";
+              }
+            })
+            .catch((error) => {
+              console.error("Chyba při načítání session:", error);
+            });
         } else {
           container.innerHTML = `
             <div class="card-body">
