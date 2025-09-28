@@ -173,4 +173,41 @@ public function actionUpdateLoad(): void
         'power_output' => $powerOutput,
     ]));
 }
+//získání aktuální běžící session pro daný generátor---
+public function actionCurrent(): void
+{
+    $data = $this->getHttpRequest()->getRawBody();
+    $json = json_decode($data, true);
+
+    if (!$json || !isset($json['generator_id']) || !is_numeric($json['generator_id'])) {
+        $this->sendResponse(new JsonResponse([
+            'error' => 'Missing or invalid generator_id',
+        ], 'application/json', 400));
+    }
+
+    $session = $this->db->table('session')
+        ->where('generator_id', $json['generator_id'])
+        ->where('end_datetime IS NULL')
+        ->order('start_datetime DESC')
+        ->fetch();
+
+    if (!$session) {
+        $this->sendResponse(new JsonResponse([
+            'error' => 'No active session found for this generator',
+        ], 'application/json', 404));
+    }
+
+    $this->sendResponse(new JsonResponse([
+        'status' => 'success',
+        'session' => [
+            'session_id' => $session->session_id,
+            'generator_id' => $session->generator_id,
+            'start_datetime' => $session->start_datetime,
+            'power_output' => $session->power_output,
+            'load_percentage' => $session->load_percentage,
+            'end_datetime' => $session->end_datetime, // bude NULL
+        ],
+    ]));
+}
+
 }
