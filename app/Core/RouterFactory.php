@@ -23,6 +23,7 @@ final class RouterFactory
         $apiRouter->addRoute('api/generators/delete', 'Generator:delete'); // Api:Generator:delete
         $apiRouter->addRoute('api/generators/update', 'Generator:update'); // Api:Generator:update
         $apiRouter->addRoute('api/generators/list', 'Generator:list'); // Api:Generator:list
+        $apiRouter->addRoute('api/generators/get', 'Generator:get'); // Api:Generator:get
         //Sessions
         $apiRouter->addRoute('api/sessions', 'Session:create'); // Api:Session:create
         $apiRouter->addRoute('api/sessions/stop', 'Session:stop'); // Api:Session:stop

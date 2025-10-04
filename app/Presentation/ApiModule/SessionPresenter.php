@@ -50,6 +50,7 @@ final class SessionPresenter extends Nette\Application\UI\Presenter
         // Vytvořit session
         $this->db->table('session')->insert([
             'generator_id' => $generator->id,
+            'generator_name' => $generator->name,
             'start_datetime' => new \DateTime(),
         ]);
 
@@ -202,6 +203,7 @@ public function actionCurrent(): void
         'session' => [
             'session_id' => $session->session_id,
             'generator_id' => $session->generator_id,
+            'generator_name' => $session->generator_name,
             'start_datetime' => $session->start_datetime,
             'power_output' => $session->power_output,
             'load_percentage' => $session->load_percentage,

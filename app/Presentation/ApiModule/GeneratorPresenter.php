@@ -132,4 +132,36 @@ if (
     $this->sendResponse(new JsonResponse($data));
 }
 
+//získání jednoho generátoru
+public function actionGet(): void
+{
+    $data = $this->getHttpRequest()->getRawBody();
+    $json = json_decode($data, true);
+
+    if (!$json || !isset($json['id']) || !is_numeric($json['id'])) {
+        $this->sendResponse(new JsonResponse([
+            'error' => 'Missing or invalid generator id',
+        ], 'application/json', 400));
+    }
+
+    $generator = $this->db->table('generator')->get($json['id']);
+
+    if (!$generator) {
+        $this->sendResponse(new JsonResponse([
+            'error' => 'Generator not found',
+        ], 'application/json', 404));
+    }
+
+    $this->sendResponse(new JsonResponse([
+        'status' => 'success',
+        'generator' => [
+            'id' => $generator->id,
+            'name' => $generator->name,
+            'max_output' => $generator->max_output,
+            'on' => $generator->on,
+            'last_load_percentage' => $generator->last_load_percentage,
+        ],
+    ]));
+}
+
 }
