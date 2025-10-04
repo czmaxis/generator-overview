@@ -12,7 +12,7 @@ class Bootstrap
 {
     public function boot(): \Nette\DI\Container
     {
-        // ⚙️ Preflight OPTIONS request pro CORS
+        //  Preflight OPTIONS request pro CORS
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             header('Access-Control-Allow-Origin: http://127.0.0.1:8080');
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -32,14 +32,14 @@ class Bootstrap
 
         $container = $configurator->createContainer();
 
-        // ⚙️ Nastavení CORS hlaviček pro každou odpověď
+        // Nastavení CORS hlaviček pro každou odpověď
         /** @var IRequest $httpRequest */
         $httpRequest = $container->getByType(IRequest::class);
         /** @var IResponse $httpResponse */
         $httpResponse = $container->getByType(IResponse::class);
 
         $origin = $httpRequest->getHeader('Origin');
-        // povolíme jen frontend na http://127.0.0.1:8080
+        // povolení jen pro http://127.0.0.1:8080
         if ($origin === 'http://127.0.0.1:8080') {
             $httpResponse->setHeader('Access-Control-Allow-Origin', $origin);
             $httpResponse->setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');

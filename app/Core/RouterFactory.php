@@ -29,6 +29,7 @@ final class RouterFactory
         $apiRouter->addRoute('api/sessions/stop', 'Session:stop'); // Api:Session:stop
         $apiRouter->addRoute('api/sessions/update-load', 'Session:updateLoad'); // Api:Session:updateLoad
         $apiRouter->addRoute('api/sessions/current', 'Session:current'); // Api:Session:current
+        $apiRouter->addRoute('api/sessions/list', 'Session:list'); // Api:Session:list
 
         $router[] = $apiRouter;
 

@@ -211,5 +211,31 @@ public function actionCurrent(): void
         ],
     ]));
 }
+//získání všech session---
+public function actionList(): void
+{
+    $sessions = $this->db->table('session')
+        ->order('start_datetime DESC')
+        ->fetchAll();
+
+    $result = [];
+
+    foreach ($sessions as $session) {
+        $result[] = [
+            'session_id' => $session->session_id,
+            'generator_id' => $session->generator_id,
+            'generator_name' => $session->generator_name ?? null,
+            'start_datetime' => $session->start_datetime,
+            'end_datetime' => $session->end_datetime,
+            'power_output' => $session->power_output,
+            'load_percentage' => $session->load_percentage,
+        ];
+    }
+
+    $this->sendResponse(new JsonResponse([
+        'status' => 'success',
+        'sessions' => $result,
+    ]));
+}
 
 }

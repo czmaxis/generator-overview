@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seznam sessions</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Načtení navbaru -->
+    <div id="navbarContainer"></div>
+
+    <div class="container mt-4">
+      <h2>Seznam sessions</h2>
+
+      <ol class="list-group list-group-numbered" id="sessionList">
+        <!-- Seznam se naplní pomocí JavaScriptu -->
+      </ol>
+    </div>
+
+    <script>
+      // Funkce pro načtení HTML do prvku podle ID
+      function loadHTML(id, url) {
+        fetch(url)
+          .then((res) => res.text())
+          .then((html) => {
+            document.getElementById(id).innerHTML = html;
+          })
+          .catch((err) => {
+            console.error("Chyba při načítání HTML:", err);
+          });
+      }
+
+      // Načíst navbar z komponenty
+      loadHTML("navbarContainer", "./generatorsComponents/navbar.html");
+
+      // Načíst seznam sessions
+      fetch("http://localhost:8000/api/sessions/list")
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            const sessionList = document.getElementById("sessionList");
+            data.sessions.forEach((session) => {
+              const item = document.createElement("li");
+              item.className =
+                "list-group-item d-flex justify-content-between align-items-start";
+
+              const content = document.createElement("div");
+              content.className = "ms-2 me-auto";
+
+              const heading = document.createElement("div");
+              heading.className = "fw-bold";
+              heading.textContent = `#${session.session_id} – ${
+                session.generator_name ?? "Neznámý generátor"
+              } (ID ${session.generator_id})`;
+
+              const detail = document.createElement("div");
+              detail.innerHTML = `
+                Start: ${new Date(session.start_datetime).toLocaleString()}<br>
+                End: ${
+                  session.end_datetime
+                    ? new Date(session.end_datetime).toLocaleString()
+                    : "Probíhá"
+                }<br>
+                Výkon: ${session.power_output} W<br>
+                Zátěž: ${session.load_percentage} %
+              `;
+
+              content.appendChild(heading);
+              content.appendChild(detail);
+
+              item.appendChild(content);
+              sessionList.appendChild(item);
+            });
+          } else {
+            alert("Nepodařilo se načíst data ze serveru.");
+          }
+        })
+        .catch((err) => {
+          console.error("Chyba při načítání sessions:", err);
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
