@@ -42,7 +42,8 @@
           </ul>
 
           <div class="mt-3">
-            <button class="btn btn-secondary mb-2" id="showLoadInput">
+            <!-- tlačítko změny zátěže se zobrazí jen pokud je zapnutý -->
+            <button class="btn btn-secondary mb-2 d-none" id="showLoadInput">
               Změnit zátěž
             </button>
             <button id="turnOn" class="btn btn-success me-2 d-none">
@@ -83,10 +84,6 @@
         const title = document.getElementById("generatorName");
         const maxOutput = document.getElementById("maxOutput");
         const status = document.getElementById("status");
-
-        const sessionStart = document.getElementById("sessionStart");
-        const sessionLoad = document.getElementById("sessionLoad");
-        const currentOutput = document.getElementById("currentOutput");
         const showLoadInput = document.getElementById("showLoadInput");
         const loadInputGroup = document.getElementById("loadInputGroup");
 
@@ -109,25 +106,27 @@
           if (generator.on) {
             status.textContent = "Zapnutý";
             btnOff.classList.remove("d-none");
+            showLoadInput.classList.remove("d-none"); // Zobrazit tlačítko změny zátěže jen pokud zapnutý
           } else {
             status.textContent = "Vypnutý";
             btnOn.classList.remove("d-none");
+            showLoadInput.classList.add("d-none"); // Skrýt tlačítko když vypnutý
           }
 
-          // Načíst aktuální session
           loadSession();
         } else {
           container.innerHTML = `
-            <div class="card-body">
-              <div class="alert alert-danger">Generátor nebyl nalezen. Vraťte se na <a href="generators.html">seznam</a>.</div>
-            </div>
-          `;
+        <div class="card-body">
+          <div class="alert alert-danger">Generátor nebyl nalezen. Vraťte se na <a href="generators.html">seznam</a>.</div>
+        </div>
+      `;
         }
 
         btnOn.addEventListener("click", () => toggleGenerator("on"));
         btnOff.addEventListener("click", () => toggleGenerator("off"));
         btnUpdate.addEventListener("click", () => updateLoad());
       });
+
       //on/off generátor, změna zátěže
       function toggleGenerator(action) {
         if (!generatorId) return;
@@ -145,26 +144,24 @@
           body: JSON.stringify({ generator_id: generatorId }),
         })
           .then((response) => response.json())
+
           .then((data) => {
-            document.getElementById("statusMessage").innerHTML = `
-              <div class="alert alert-info">${
-                data.message || "Operace provedena."
-              }</div>
-            `;
             const status = document.getElementById("status");
             const btnOn = document.getElementById("turnOn");
             const btnOff = document.getElementById("turnOff");
+            const showLoadInput = document.getElementById("showLoadInput");
 
             if (action === "on") {
               status.textContent = "Zapnutý";
               btnOn.classList.add("d-none");
               btnOff.classList.remove("d-none");
+              showLoadInput.classList.remove("d-none"); // Zobrazit změnu zátěže
             } else {
               status.textContent = "Vypnutý";
               btnOff.classList.add("d-none");
               btnOn.classList.remove("d-none");
+              showLoadInput.classList.add("d-none"); // Skrýt změnu zátěže
             }
-
             // znovu načíst session
             loadSession();
           })
@@ -209,6 +206,10 @@
           return;
         }
 
+        if (!generator.on) {
+          alert("Generátor musí být zapnutý, aby bylo možné měnit zátěž.");
+          return;
+        }
         const generatorData = { generator_id: generatorId };
 
         // Nejprve ukončit aktuální session
