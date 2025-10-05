@@ -209,14 +209,33 @@
           return;
         }
 
-        fetch("http://localhost:8000/api/sessions/update-load", {
+        const generatorData = { generator_id: generatorId };
+
+        // Nejprve ukončit aktuální session
+        fetch("http://localhost:8000/api/sessions/stop", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            generator_id: generatorId,
-            load_percentage: newLoad,
-          }),
+          body: JSON.stringify(generatorData),
         })
+          .then(() => {
+            // Poté vytvořit novou session s novou zátěží
+            return fetch("http://localhost:8000/api/sessions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(generatorData),
+            });
+          })
+          .then(() => {
+            // A nakonec aktualizovat zátěž
+            return fetch("http://localhost:8000/api/sessions/update-load", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                generator_id: generatorId,
+                load_percentage: newLoad,
+              }),
+            });
+          })
           .then((response) => response.json())
           .then((data) => {
             if (data.status === "success") {
@@ -225,24 +244,27 @@
               document.getElementById("currentOutput").textContent =
                 data.power_output + " W";
               document.getElementById("statusMessage").innerHTML = `
-            <div class="alert alert-success">${data.message}</div>
-          `;
+          <div class="alert alert-success">${data.message}</div>
+        `;
             } else {
               document.getElementById("statusMessage").innerHTML = `
-            <div class="alert alert-danger">${
-              data.error || "Chyba při aktualizaci zátěže"
-            }</div>
-          `;
+          <div class="alert alert-danger">${
+            data.error || "Chyba při aktualizaci zátěže"
+          }</div>
+        `;
             }
 
             // Skrytí pole po odeslání
             document.getElementById("loadInputGroup").classList.add("d-none");
             document.getElementById("showLoadInput").classList.remove("d-none");
+
+            // Obnovit session info
+            loadSession();
           })
           .catch((error) => {
             document.getElementById("statusMessage").innerHTML = `
-          <div class="alert alert-danger">Chyba: ${error}</div>
-        `;
+        <div class="alert alert-danger">Chyba: ${error}</div>
+      `;
           });
       }
     </script>
