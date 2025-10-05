@@ -21,9 +21,82 @@
   <body>
     <div id="navbarContainer"></div>
 
-    <h1 class="mb-4">Seznam generátorů</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Seznam generátorů</h1>
+      <button
+        type="button"
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#addGeneratorModal"
+      >
+        Přidat generátor
+      </button>
+    </div>
 
     <div id="listContainer"></div>
+
+    <!-- MODAL pro přidání generátoru -->
+    <div
+      class="modal fade"
+      id="addGeneratorModal"
+      tabindex="-1"
+      aria-labelledby="addGeneratorModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addGeneratorModalLabel">
+              Přidat generátor
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Zavřít"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label for="generatorName" class="form-label"
+                >Název generátoru</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="generatorNameInput"
+                placeholder="Zadejte jméno generátoru"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="maxOutput" class="form-label">Maximální výkon</label>
+              <input
+                type="number"
+                class="form-control"
+                id="maxOutput"
+                placeholder="Zadejte maximální výkon"
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Zrušit
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="saveGenerator()"
+            >
+              Uložit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script>
       // Načti komponenty HTML
@@ -37,6 +110,63 @@
 
       loadHTML("navbarContainer", "./generatorsComponents/navbar.html");
       loadHTML("listContainer", "./generatorsComponents/generatorsList.html");
+
+      // Uložit nový generátor
+      function saveGenerator() {
+        const nameInput = document.getElementById("generatorNameInput");
+        const outputInput = document.getElementById("maxOutput");
+
+        if (
+          !(nameInput instanceof HTMLInputElement) ||
+          !(outputInput instanceof HTMLInputElement)
+        ) {
+          alert("Formulář není správně načten.");
+          return;
+        }
+
+        const name = nameInput.value.trim();
+        const maxOutput = parseInt(outputInput.value);
+
+        if (!name || isNaN(maxOutput) || maxOutput <= 0) {
+          alert("Vyplňte všechna pole správně.");
+          return;
+        }
+
+        fetch("http://localhost:8000/api/generators", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: name,
+            max_output: maxOutput,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.status === "success") {
+              const modalEl = document.getElementById("addGeneratorModal");
+              const modal = bootstrap.Modal.getInstance(modalEl);
+              modal.hide();
+
+              // Vyprázdnit formulář
+              nameInput.value = "";
+              outputInput.value = "";
+
+              // Obnovit seznam
+              loadHTML(
+                "listContainer",
+                "./generatorsComponents/generatorsList.html"
+              );
+            } else {
+              alert("Chyba při ukládání generátoru.");
+            }
+          })
+          .catch((error) => {
+            console.error("Chyba:", error);
+            alert("Nastala chyba při komunikaci se serverem.");
+          });
+      }
     </script>
 
     <script src="./generatorsComponents/generatorsScript.js"></script>
