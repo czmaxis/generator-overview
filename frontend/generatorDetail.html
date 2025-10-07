@@ -76,6 +76,7 @@
     <script>
       let generatorId = null;
       let generator = null;
+      let generatorIsOn = false; // ✅ nová proměnná místo generator.on
 
       document.addEventListener("DOMContentLoaded", () => {
         const data = localStorage.getItem("selectedGenerator");
@@ -103,23 +104,13 @@
           title.textContent = `${generator.name} (ID: ${generator.id})`;
           maxOutput.textContent = generator.max_output;
 
-          if (generator.on) {
-            status.textContent = "Zapnutý";
-            btnOff.classList.remove("d-none");
-            showLoadInput.classList.remove("d-none"); // Zobrazit tlačítko změny zátěže jen pokud zapnutý
-          } else {
-            status.textContent = "Vypnutý";
-            btnOn.classList.remove("d-none");
-            showLoadInput.classList.add("d-none"); // Skrýt tlačítko když vypnutý
-          }
-
+          // vždy načteme aktuální stav ze serveru
           loadSession();
         } else {
           container.innerHTML = `
         <div class="card-body">
           <div class="alert alert-danger">Generátor nebyl nalezen. Vraťte se na <a href="generators.html">seznam</a>.</div>
-        </div>
-      `;
+        </div>`;
         }
 
         btnOn.addEventListener("click", () => toggleGenerator("on"));
@@ -127,7 +118,7 @@
         btnUpdate.addEventListener("click", () => updateLoad());
       });
 
-      //on/off generátor, změna zátěže
+      // ON / OFF generátor
       function toggleGenerator(action) {
         if (!generatorId) return;
 
@@ -138,13 +129,10 @@
 
         fetch(url, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ generator_id: generatorId }),
         })
-          .then((response) => response.json())
-
+          .then((res) => res.json())
           .then((data) => {
             const status = document.getElementById("status");
             const btnOn = document.getElementById("turnOn");
@@ -152,35 +140,49 @@
             const showLoadInput = document.getElementById("showLoadInput");
 
             if (action === "on") {
+              generatorIsOn = true;
               status.textContent = "Zapnutý";
               btnOn.classList.add("d-none");
               btnOff.classList.remove("d-none");
-              showLoadInput.classList.remove("d-none"); // Zobrazit změnu zátěže
+              showLoadInput.classList.remove("d-none");
             } else {
+              generatorIsOn = false;
               status.textContent = "Vypnutý";
               btnOff.classList.add("d-none");
               btnOn.classList.remove("d-none");
-              showLoadInput.classList.add("d-none"); // Skrýt změnu zátěže
+              showLoadInput.classList.add("d-none");
             }
-            // znovu načíst session
+
+            // znovu načíst session, abychom měli aktuální data
             loadSession();
           })
           .catch((error) => {
             document.getElementById("statusMessage").innerHTML = `
-              <div class="alert alert-danger">Chyba: ${error}</div>
-            `;
+          <div class="alert alert-danger">Chyba: ${error}</div>`;
           });
       }
 
+      // Načti aktuální session generátoru
       function loadSession() {
         fetch("http://localhost:8000/api/sessions/current", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ generator_id: generatorId }),
         })
-          .then((response) => response.json())
+          .then((res) => res.json())
           .then((data) => {
+            const status = document.getElementById("status");
+            const btnOn = document.getElementById("turnOn");
+            const btnOff = document.getElementById("turnOff");
+            const showLoadInput = document.getElementById("showLoadInput");
+
             if (data.status === "success" && data.session) {
+              generatorIsOn = true; //  označíme, že je zapnutý
+              status.textContent = "Zapnutý";
+              btnOff.classList.remove("d-none");
+              btnOn.classList.add("d-none");
+              showLoadInput.classList.remove("d-none");
+
               document.getElementById("sessionStart").textContent = new Date(
                 data.session.start_datetime
               ).toLocaleString();
@@ -189,16 +191,21 @@
               document.getElementById("currentOutput").textContent =
                 data.session.power_output + " W";
             } else {
+              generatorIsOn = false;
+              status.textContent = "Vypnutý";
+              btnOn.classList.remove("d-none");
+              btnOff.classList.add("d-none");
+              showLoadInput.classList.add("d-none");
+
               document.getElementById("sessionStart").textContent = "-";
               document.getElementById("sessionLoad").textContent = "-";
               document.getElementById("currentOutput").textContent = "-";
             }
           })
-          .catch((error) => {
-            console.error("Chyba při načítání session:", error);
-          });
+          .catch((err) => console.error("Chyba při načítání session:", err));
       }
 
+      //  změna zátěže
       function updateLoad() {
         const newLoad = parseInt(document.getElementById("newLoad").value);
         if (isNaN(newLoad) || newLoad < 0 || newLoad > 100) {
@@ -206,10 +213,11 @@
           return;
         }
 
-        if (!generator.on) {
+        if (!generatorIsOn) {
           alert("Generátor musí být zapnutý, aby bylo možné měnit zátěž.");
           return;
         }
+
         const generatorData = { generator_id: generatorId };
 
         // Nejprve ukončit aktuální session
@@ -237,7 +245,7 @@
               }),
             });
           })
-          .then((response) => response.json())
+          .then((res) => res.json())
           .then((data) => {
             if (data.status === "success") {
               document.getElementById("sessionLoad").textContent =
@@ -245,27 +253,21 @@
               document.getElementById("currentOutput").textContent =
                 data.power_output + " W";
               document.getElementById("statusMessage").innerHTML = `
-          <div class="alert alert-success">${data.message}</div>
-        `;
+            <div class="alert alert-success">${data.message}</div>`;
             } else {
               document.getElementById("statusMessage").innerHTML = `
-          <div class="alert alert-danger">${
-            data.error || "Chyba při aktualizaci zátěže"
-          }</div>
-        `;
+            <div class="alert alert-danger">${
+              data.error || "Chyba při aktualizaci zátěže"
+            }</div>`;
             }
 
-            // Skrytí pole po odeslání
             document.getElementById("loadInputGroup").classList.add("d-none");
             document.getElementById("showLoadInput").classList.remove("d-none");
-
-            // Obnovit session info
             loadSession();
           })
-          .catch((error) => {
+          .catch((err) => {
             document.getElementById("statusMessage").innerHTML = `
-        <div class="alert alert-danger">Chyba: ${error}</div>
-      `;
+          <div class="alert alert-danger">Chyba: ${err}</div>`;
           });
       }
     </script>
